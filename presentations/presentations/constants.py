@@ -1,0 +1,1 @@
+TARGET_FOLDER_PATH = r"C:\Users\Dasha\Desktop\the_papka"
