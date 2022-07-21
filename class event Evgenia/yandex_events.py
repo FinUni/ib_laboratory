@@ -1,54 +1,80 @@
-from datetime import date
 import caldav
 from icalendar import Calendar
+from datetime import datetime
 
 
-class EventParameters:
-    def __init__(self, summary, description, dateStart, dateEnd, timeStart, timeEnd):
+class Event:
+    def __init__(self, summary: str, description: str, datetimeStart: str, datetimeEnd: str):
         self.summary = summary
         self.description = description
-        self.dateStart = dateStart
-        self.dateEnd = dateEnd
-        self.timeStart = timeStart
-        self.timeEnd = timeEnd
+        self.datetimeStart = datetimeStart
+        self.datetimeEnd = datetimeEnd
 
 
-def yandex_calendar_events(data_begin, data_end, url, userN, passW):
+def parse_human_readable_datetime(data):
+    assert isinstance(data, str), "Type is not a string"
+    if len(data) == 10:
+        return datetime.strptime(data, "%d.%m.%Y")
+    if len(data) == 20:
+        return datetime.strptime(data, "%d.%m.%Y, %H:%M:%S")
+    assert False, "Date format should be <dd.mm.yyyy> or <dd.mm.yyyy, hh:mm:ss>"
+
+
+def read_events(results):
+    AllEvents = []
+    for eventraw in results:
+        event = Calendar.from_ical(eventraw._data)
+        for component in event.walk():
+            if component.name == "VEVENT":
+                MyNewEvent = Event(summary=component.get('summary'),
+                                   description=component.get('description'),
+                                   datetimeStart=component.get('dtstart').dt.strftime('%d.%m.%Y'),
+                                   datetimeEnd=component.get('dtend').dt.strftime('%d.%m.%Y')
+                                   )
+                AllEvents.append(MyNewEvent)
+    return AllEvents
+
+
+def parse_yandex_calendar_events(data_begin, data_end, url, userN, passW):
     client = caldav.DAVClient(url=url, username=userN, password=passW)
     principal = client.principal()
 
     calendar = principal.calendar(name="Мои события")
     results = calendar.events()
-    AllEvents = []
 
-    for eventraw in results:
-        event = Calendar.from_ical(eventraw._data)
-        for component in event.walk():
-            if component.name == "VEVENT":
-                MyNewEvent = EventParameters(summary=component.get('summary'),
-                                             description=component.get('description'),
-                                             dateStart=component.get('dtstart').dt.strftime('%m/%d/%Y'),
-                                             dateEnd=component.get('dtend').dt.strftime('%m/%d/%Y'),
-                                             timeStart=component.get('dtstart').dt.strftime('%H:%M'),
-                                             timeEnd=component.get('dtend').dt.strftime('%H:%M')
-                                             )
-                AllEvents.append(MyNewEvent)
+    AllEvents = read_events(results)
+
+    data_begin = parse_human_readable_datetime(data_begin)
+    if data_end is None:
+        data_end = datetime.today()
+    else:
+        data_end = parse_human_readable_datetime(data_end)
 
     for event in AllEvents:
-        y_m_d = event.dateStart.split('/')
-        if data_begin <= date(int(y_m_d[2]), int(y_m_d[0]), int(y_m_d[1])) <= data_end:
-            print('Событие: ', event.summary)
-            print('Комментарий: ', event.description)
-            print('Дата начала: ', event.dateStart)
-            print('Дата окончания', event.dateEnd)
-            print('Время окончания', event.timeStart)
-            print('Время окончания', event.timeEnd, '\n')
+        event.datetimeStart = parse_human_readable_datetime(event.datetimeStart)
+        event.datetimeEnd = parse_human_readable_datetime(event.datetimeEnd)
+        if data_begin <= event.datetimeStart <= data_end:
+            print(f"Событие: {event.summary}")
+            print(f"Комментарий: {event.description}")
+            print(f"Начало: {event.datetimeStart}")
+            print(f"Окончание: {event.datetimeEnd} \n")
 
 
-yandex_calendar_events(date(2020, 7, 14),
-                       date(2022, 6, 30),
-                       "https://caldav.yandex.ru/calendars/ew.kiseleva2014%40yandex.ru/events-18248179/",
-                       "ew.kiseleva2014@yandex.ru",
-                       "xuyqonjiuvucnrft")
+def read_file_secret_storage(file):
+    read_file = []
+    with open(file, "r") as f:
+        for line in f.readlines():
+            read_file.append(line)
+    yourUrl = read_file[0][:-1]
+    username = read_file[1][:-1]
+    password = read_file[2]
+    return yourUrl, username, password
 
+
+yourUrl, username, password = read_file_secret_storage("secret_storage")
+parse_yandex_calendar_events(data_begin="01.07.2022, 10:32:00",
+                             data_end=None,
+                             url=yourUrl,
+                             userN=username,
+                             passW=password)
 
