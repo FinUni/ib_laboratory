@@ -10,10 +10,10 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 # If modifying these scopes, delete the file token.json.
-SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
+SCOPES = ['https://www.googleapis.com/auth/calendar']
 
 
-def main():
+def GoogleCalendar():
     """Shows basic usage of the Google Calendar API.
     Prints the start and name of the next events on the user's calendar.
     """
@@ -23,33 +23,47 @@ def main():
     # time.
     if os.path.exists('token.json'):
         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-    # If there are no (valid) credentials available, let the user log in.
+    # Проверяет существование файла с информацией об авторизованном пользователе
+    # и проверяет действительность учетных данных.
+    # Это верно, если учетные данные имеют токен и срок действия токена не истек.
+    # Надо затестить from_authorized_user_info
+    # Скорее всего необязательно считывать данные из файлика
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
+            # Файл client_secret берётся в консоле гугла в разделе Credentials
+            # Создаётся локальный сервер для авторизации пользователя
+            # Вся необходимая для дальней авторизации записывается в файл token.json
             flow = InstalledAppFlow.from_client_secrets_file(
                 '/Users/sergeymarkin/Desktop/ib_laboratory/google_calendar/client_secret_122582591655-ommn1ml19bqlepf6vec55vujutsgn4ht.apps.googleusercontent.com.json', SCOPES)
-            creds = flow.run_local_server(port=0)
+            creds = flow.run_local_server(port=0, authorization_prompt_message='Для авторизации перейдите по ссылке:\n{url}',
+                                          success_message='Авторизация прошла успешно!\nМожете закрыть эту страницу.',
+                                          open_browser=False)
         # Save the credentials for the next run
         with open('token.json', 'w') as token:
             token.write(creds.to_json())
 
     try:
+        # Создаёт ресурс для взаимодействия с API.
         service = build('calendar', 'v3', credentials=creds)
 
         # Call the Calendar API
         now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
-        events_result = service.events().list(calendarId='primary', timeMin=now,
+        # Записываем в calendar_list названия созданных календарей и выводим данные из него
+        calendar_list = []
+        for calendar_list_entry in service.calendarList().list().execute()['items']:
+            calendar_list.append(calendar_list_entry['summary'])
+        events_result = service.events().list(calendarId=calendar_list[-1], timeMin=now,
                                               singleEvents=True,
                                               orderBy='startTime').execute()
         events = events_result.get('items', [])
 
         if not events:
-            print('No upcoming events found.')
+            print('Нет предстоящих мероприятий.')
             return
 
-        # Prints the start and name of the next 10 events
+        # Выводим информацию о событиях
         for event in events:
             start = event['start'].get('dateTime', event['start'].get('date'))
             if isinstance(['description'], str):
@@ -59,7 +73,3 @@ def main():
 
     except HttpError as error:
         print('An error occurred: %s' % error)
-
-
-if __name__ == '__main__':
-    main()
