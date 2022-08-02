@@ -1,8 +1,7 @@
-from datetime import datetime, timedelta
+import matplotlib.pyplot as plt
 import radar
+import time
 
-
-# Готовы сортировки bubble_sort и merge_sort, остальное в процессе
 
 def bubble_sort(N):
     for i in range(len(N) - 1):
@@ -52,38 +51,42 @@ def merge_sort(N):
     return merge(left_list, right_list)
 
 
-# def counting_sort(N):
-#     i_lower_bound, upper_bound = min(N), max(N)
-#     lower_bound = i_lower_bound
-#     if i_lower_bound < datetime(1900, 1, 1):
-#         lb = i_lower_bound
-#         N = [item + lb for item in N]
-#         lower_bound, upper_bound = min(N), max(N)
-#
-#     counter_nums = [0] * (upper_bound - lower_bound + timedelta(days=1))
-#     for item in N:
-#         counter_nums[item - lower_bound] += timedelta(days=1)
-#     pos = 0
-#     for idx, item in enumerate(counter_nums):
-#         num = idx + lower_bound
-#         for i in range(item):
-#             N[pos] = num
-#             pos += 1
-#     if i_lower_bound < datetime(1900, 1, 1):
-#         lb = i_lower_bound
-#         N = [item - lb for item in N]
-#     return N
+
+time_bubble_sort = []
+time_merge_sort = []
+time_sorted = []
+
+for i in (10, 100, 1000, 5000):
+    datetimes = []
+    for j in range(i):
+        datetimes.append(radar.random_datetime(start='2000-01-21', stop='2020-12-31T23:59:59'))
+
+    startTime = time.time()
+    bubble_sort(datetimes)
+    endTime = time.time()
+    time_bubble_sort.append(endTime - startTime)
+
+    startTime = time.time()
+    merge_sort(datetimes)
+    endTime = time.time()
+    time_merge_sort.append(endTime - startTime)
+
+    startTime = time.time()
+    sorted(datetimes)
+    endTime = time.time()
+    time_sorted.append(endTime - startTime)
 
 
 
+x = ['10', '100', '1000', '5000']
+y_for_bubble_sort = time_bubble_sort
+y_for_merge_sort = time_merge_sort
+y_for_sorted = time_sorted
 
-datetime_10 = []
-for i in range(10):
-    datetime_10.append(radar.random_datetime(start='2000-01-21', stop='2020-12-31T23:59:59'))
-print("До ", datetime_10)
-
-print("bubble_sort ", bubble_sort(datetime_10))
-print("merge_sort ", merge_sort(datetime_10))
-# print("counting_sort ", counting_sort(datetime_10))
-
+plt.plot(x, y_for_bubble_sort, label='bubble_sort')
+plt.plot(x, y_for_merge_sort, label='merge_sort')
+plt.plot(x, y_for_sorted, label='sorted')
+plt.legend()
+plt.grid()
+plt.show()
 
