@@ -36,7 +36,7 @@ def GoogleCalendar():
             # Создаётся локальный сервер для авторизации пользователя
             # Вся необходимая для дальней авторизации записывается в файл token.json
             flow = InstalledAppFlow.from_client_secrets_file( # todo: подтягивать данные онлайн
-                '/Users/sergeymarkin/Desktop/ib_laboratory/google_calendar/client_secret_122582591655-ommn1ml19bqlepf6vec55vujutsgn4ht.apps.googleusercontent.com.json', SCOPES)
+                r'C:\Users\Dasha\Desktop\ib_laboratory\google_calendar\client_secret_122582591655-ommn1ml19bqlepf6vec55vujutsgn4ht.apps.googleusercontent.com.json', SCOPES)
             creds = flow.run_local_server(port=0, authorization_prompt_message='Для авторизации перейдите по ссылке:\n{url}',
                                           success_message='Авторизация прошла успешно!\nМожете закрыть эту страницу.',
                                           open_browser=False)
@@ -45,6 +45,7 @@ def GoogleCalendar():
             token.write(creds.to_json())
 
     try:
+        all_events = []
         # Создаёт ресурс для взаимодействия с API.
         service = build('calendar', 'v3', credentials=creds)
 
@@ -61,6 +62,7 @@ def GoogleCalendar():
             events_result = service.events().list(calendarId=list(calendar_list)[int(num_calendar)-1], timeMin=now,
                                                   singleEvents=True,
                                                   orderBy='startTime').execute()
+            all_events.extend(events_result.get('items', []))
             events = events_result.get('items', [])
 
             if not events:
@@ -78,4 +80,4 @@ def GoogleCalendar():
     except HttpError as error:
         print('An error occurred: %s' % error)
 
-GoogleCalendar()
+    return all_events
