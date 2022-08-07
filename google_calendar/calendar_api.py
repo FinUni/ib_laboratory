@@ -13,10 +13,11 @@ from googleapiclient.errors import HttpError
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
 
-def GoogleCalendar():
+def GoogleCalendar(date = None):
     """Shows basic usage of the Google Calendar API.
     Prints the start and name of the next events on the user's calendar.
     """
+    print(date)
     creds = None
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
@@ -55,9 +56,9 @@ def GoogleCalendar():
         calendar_list = {}
         for calendar_list_entry in service.calendarList().list().execute()['items']:
             calendar_list[calendar_list_entry['id']] = calendar_list_entry['summary']
-        for num_calendar, num in zip(calendar_list, range(len(calendar_list))):
-            print(f'{num+1}. {calendar_list[num_calendar]}')
-        nums_calendar = str(input('Укажите номер календарей через пробел:\n')).split()
+        # for num_calendar, num in zip(calendar_list, range(len(calendar_list))):
+        #     print(f'{num+1}. {calendar_list[num_calendar]}')
+        nums_calendar = [4]
         for num_calendar in nums_calendar:
             events_result = service.events().list(calendarId=list(calendar_list)[int(num_calendar)-1], timeMin=now,
                                                   singleEvents=True,
@@ -65,19 +66,24 @@ def GoogleCalendar():
             all_events.extend(events_result.get('items', []))
             events = events_result.get('items', [])
 
-            if not events:
-                print('Нет предстоящих мероприятий.')
-                return
-
-            # Выводим информацию о событиях
-            for event in events:
-                start = event['start'].get('dateTime', event['start'].get('date'))
-                if isinstance(['description'], str):
-                    print(start, event['summary'], event['description'])
-                else:
-                    print(start, event['summary'])
-
+    #         if not events:
+    #             print('Нет предстоящих мероприятий.')
+    #             return
+    #
+    #         # Выводим информацию о событиях
+    #         for event in events:
+    #             start = event['start'].get('dateTime', event['start'].get('date'))
+    #             if isinstance(['description'], str):
+    #                 print(start, event['summary'], event['description'])
+    #             else:
+    #                 print(start, event['summary'])
+    #
     except HttpError as error:
         print('An error occurred: %s' % error)
 
     return all_events
+
+
+def update_google_event():
+    pass
+
